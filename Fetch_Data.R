@@ -1,3 +1,8 @@
+library(tidyr)
+library(dplyr)
+library(RCurl)
+library(XML)
+
 #Function downloads all DCMS user inputted data sources
 
 Fetch_DCMSData<-function(Source = "./User_Sources/DCMSDataSources.csv"){
@@ -14,6 +19,38 @@ Fetch_DCMSData<-function(Source = "./User_Sources/DCMSDataSources.csv"){
                   destfile = paste0("./Data/",Source_df[which(Source_df[,1]==x),2],".xlsx"),
                   mode="wb")
   )
+  
+  RC_URL<-"https://www.gov.uk/government/statistics/statistics"
+  RC_URL_Content<-getURL(RC_URL)
+  parsed_RC_Content<-htmlParse(RC_URL_Content)
+  RC_links<-unlist(xpathSApply(parsed_RC_Content,path = "//a",xmlGetAttr,"href"))
+  
+  csv_files<-RC_links[which(grepl(".csv",RC_links))]
+  csv_at_end<-substr(csv_files,nchar(csv_files)-3,nchar(csv_files))
+  RC_csv_file<-csv_files[which(csv_at_end==".csv")]
+  
+  download.file(url = paste0("https://www.gov.uk",RC_csv_file), 
+                destfile = "./Data/ReleaseCalendar.csv",
+                mode="wb")
+  
+  ONS_Tourism_RC_URL<-"https://www.gov.uk/government/statistics/announcements?utf8=%E2%9C%93&keywords=tourism"
+  ONS_Tourism_RC_UR_Content<-getURL(ONS_Tourism_RC_URL)
+  parsed_ONS_RC_Content<-htmlParse(ONS_Tourism_RC_UR_Content)
+  
+  ONS_RC_Stats<-unlist(xpathSApply(parsed_ONS_RC_Content,path = "//h3//a",xmlValue))
+  
+  ONS_RC_Stats_Dates<-unlist(xpathSApply(parsed_ONS_RC_Content,path = "//ul//li",xmlValue))
+  ONS_RC_Stats_Dates<-ONS_RC_Stats_Dates[which((grepl("(provisional)",ONS_RC_Stats_Dates)
+                                               |grepl("(confirmed)",ONS_RC_Stats_Dates)))]
+  
+  ONS_RC_Stats_Dates<-gsub("pm "," pm",gsub("am "," am",gsub("\\(provisional\\)","",gsub("\\(confirmed\\)","",ONS_RC_Stats_Dates))))
+  ONS_RC_Stats_Dates<-format(strptime(ONS_RC_Stats_Dates,"%d %b %Y %H:%M %p"),"%d-%m-%Y")
+  
+  RC<-data.frame(Organisation = rep("ONS",length(ONS_RC_Stats)),Publication = ONS_RC_Stats, Date = ONS_RC_Stats_Dates)
+  
+  RC<-RC[which(!(grepl("Wales",RC$Publication)|grepl("Scotland",RC$Publication))),]
+  
+  write.csv(RC,file = "./Data/ONSReleaseCalendar.csv")
   
   #prints message to console when complete
   return(print("DCMS datasets have been downloaded"))
