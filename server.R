@@ -8,36 +8,124 @@
 #
 
 # Define server logic required to draw a histogram
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
   
-    ## Create reactive objects
+  ##Update sliders for the overall panel
+  
+  overall_years<-reactive(as.numeric(colnames(Clean_Economic(input$EconomicDT))))
+  
+  output$overall_rng <- renderUI({
+    
+                                  sliderInput("inoverall_rng","Adjust the range below to change the years used to calculate the percentage change in the table:", min=min(overall_years()), max=max(overall_years()), 
+                                               value=c(max(overall_years())-1,max(overall_years())),sep="")
+                                })
+  
+  output$visitspend_tpm<-renderUI({if(input$VisitSpendPeriod == "Monthly"){selectInput("invisitspend_tpm","Please choose the month to be used to calculate percentage change in the table (Please note that if the month for both years selected do not appear in the graph then the table will be empty):",
+                                                                          c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
+                                    
+                                  }}) 
+    
+  output$visitspend_tpq<-renderUI({if(input$VisitSpendPeriod =="Quarterly"){
+                                                                                  
+                                      selectInput("invisitspend_tpq","Please choose the quarter to be used to calculate percentage change in the table (Please note that if the quarter for both years selected do not appear in the graph then the table will be empty):",
+                                                  c("Q1","Q2","Q3","Q4"))
+                                                              
+                                                                            }
+                                })
+  
+  ## Create reactive objects
+  
   Rplot_Economic<-reactive(plot_Economic(input$EconomicDT))
-  Rtable_Economic<-reactive(Output_Economic(input$EconomicDT))
   
-  Rplot_VisitSpend<-reactive(if(input$VisitSpendDT == "Inbound tourism (UK)"){
-    
-                              plot_ONSVisitSpend(start=2010)
-    
-                              } else if(input$VisitSpendDT == "Domestic overnight tourism (GB)"){
-                              
-                              plot_GBTS()})
+  Rtable_Economic<-reactive(Output_Economic(input$EconomicDT,as.integer(input$inoverall_rng[1]),as.integer(input$inoverall_rng[2])))
   
-  Rtable_VisitSpend<-reactive(if(input$VisitSpendDT == "Inbound tourism (UK)"){
+  VSTitle<-reactive({if(input$VisitSpendPeriod == "Annual"){
     
-    Output_VisitSpend(Clean_ONSVisitSpend()/1000,Clean_ONSVisitSpend(Mode = "Quarters")/1000,"Visits (millions)","Spend (£bn)")
+                        "Latest calendar year data"
+    
+                    }else if(input$VisitSpendPeriod == "Quarterly"){
+    
+                        "Latest quarterly data"
+                      
+                    } else if(input$VisitSpendPeriod == "Monthly"){"Latest monthly data"}
+                    
+                   })
+  
+  VSTP<-reactive({if(input$VisitSpendPeriod == "Annual"){
+    
+    NA 
+    
+  }else if(input$VisitSpendPeriod == "Quarterly"){
+    
+    input$invisitspend_tpq
+    
+  } else if(input$VisitSpendPeriod == "Monthly"){toupper(input$invisitspend_tpm)}
+    
+  })
+  
+  GBTSVSTP<-reactive({if(input$VisitSpendPeriod == "Annual"){
+    
+    NA 
+    
+  }else if(input$VisitSpendPeriod == "Quarterly"){
+    
+    input$invisitspend_tpq
+    
+  } else if(input$VisitSpendPeriod == "Monthly"){input$invisitspend_tpm}
+    
+  })
+  
+  VSRng<-reactive({if(exists(deparse(substitute(input$invisitspend_rng)))==FALSE){
+    
+                    c(as.integer(format(Sys.Date(), "%Y"))-2,as.integer(format(Sys.Date(), "%Y"))-1)
+    
+                  }else{input$invisitspend_rng}
+                  
+                  })
+  
+  
+  GBTSBaseData<-eventReactive({input$Fetch
+                              input$VisitSpendDT},{Clean_VB_LatestGBTS()})
+  
+  GBTSWorkingData<-reactive(Clean_VB_GBTSModev2(GBTSBaseData(),GBTSVSTP()))
+  
+  visitspend_years<-reactive(if(input$VisitSpendDT == "Inbound tourism (UK)"){
+    
+    as.numeric(substr(colnames(Clean_ONSVisitSpend(Mode = input$VisitSpendPeriod, TP = VSTP())),1,4))
+    
+  } else if(input$VisitSpendDT == "Domestic overnight tourism (GB)"){
+    
+    if(input$VisitSpendPeriod=="Annual"){as.numeric(GBTSWorkingData()[,1])}else{
+       as.numeric(gsub(GBTSVSTP(),"",gsub("[[:space:]]","",GBTSWorkingData()[,1])))}})
+  
+  output$visitspend_rng <- renderUI({
+    
+    sliderInput("invisitspend_rng","Adjust the range below to change the years used to calculate the percentage change in the table:", min=min(visitspend_years()), max=max(visitspend_years()), step = 1,
+                value=c(max(visitspend_years())-1,max(visitspend_years())),sep="")
+    
+  })
+  
+  Rtable_VisitSpend<-reactive({if(input$VisitSpendDT == "Inbound tourism (UK)"){
+    
+    Output_ONSVisitSpend(Mode = input$VisitSpendPeriod,start = 2010,units=10^3,series1 = "Visits (millions)",series2 = "Spend (£bn)",
+                                           title = as.character(VSTitle()),y1 = input$invisitspend_rng[1],
+                       y2 = input$invisitspend_rng[2],TP = VSTP())
     
     } else if(input$VisitSpendDT == "Domestic overnight tourism (GB)"){
       
-      Output_VisitSpend2(Clean_GBTSVisitSpend(),"Visits (millions)","Spend (£bn)")})
+      Output_GBTSVisitSpend(GBTSBaseData(),1,"Visits (millions)","Spend (£bn)",title = as.character(VSTitle()),input$invisitspend_rng[1],input$invisitspend_rng[2],GBTSVSTP())}})
   
-  VisitSpendData<-reactive({if(input$VisitSpendDT == "Inbound tourism (UK)"){
+  Rplot_VisitSpend<-reactive(if(input$VisitSpendDT == "Inbound tourism (UK)"){
     
-                                Clean_ONSVisitSpend()
+    plot_ONSVisitSpend(start=2010,Mode = input$VisitSpendPeriod,TP = VSTP())
     
-                            } else if(input$VisitSpendDT == "Domestic overnight tourism (GB)"){
-                              
-                              Clean_GBTSVisitSpend()}})
+  } else if(input$VisitSpendDT == "Domestic overnight tourism (GB)"){
+    
+    plot_GBTS(GBTSBaseData(),input$VisitSpendPeriod)})
   
+  
+  
+  ##Plot graphs and generate tables from reactive data for the overall panel
   
   output$EconomicPlot <- plotly::renderPlotly({Rplot_Economic()})
   output$EconomicTable <- DT::renderDataTable({Rtable_Economic()}, options = list(dom = 't'))
@@ -45,26 +133,44 @@ shinyServer(function(input, output) {
   output$VisitSpendPlot<-plotly::renderPlotly({Rplot_VisitSpend()})
   output$VisitSpendTable<-DT::renderDataTable({Rtable_VisitSpend()}, options = list(dom = 't')) 
 
-  ## Reactive notes
-  #GBTSDT<-eventReactive(input$Fetch,{reactive(Output_VisitSpend(Clean_GBTSVisitSpend(),"Visits (millions)","Spend (£bn)"))},ignoreNULL=FALSE)
-  #GBTS<-eventReactive(input$Fetch,{Clean_GBTSVisitSpend()},ignoreNULL = FALSE)
-  #GBTSMaxYear<-reactive(colnames(GBTS())[length(GBTS())])
-  #GBTSNote<-reactive(paste("2. GBTS figures are available up to ", paste(GBTSMaxYear(), "however spend data is not yet available")))
-  #GBTShref<-reactive(paste("https://www.visitbritain.org/gb-tourism-survey-",paste(GBTSMaxYear(),"-overview",sep=""),sep=""))
-  #GBTSText<-reactive(paste("GBTS Travel Survey: ",GBTSMaxYear(),sep=""))
-  
-  #Sources<-eventReactive(input$Fetch,{read.csv("./User_Sources/DataSources.csv")},ignoreNULL=FALSE)
-  #Sources_DCMS<-reactive(unique(as.vector(Sources()[which(Sources()$Source=="DCMS"),4])))
-  #Sources_ONS<-reactive(unique(as.vector(Sources()[which(Sources()$Source=="ONS"),4])))
-  
-  #output$VisitSpendNotes<-renderUI({
-    #if(length(GBTS()[which(is.na(GBTS()[,length(GBTS())])),length(GBTS())])>0){tags$p(GBTSNote())}
-    #})
 
-  #output$EconomicSources<-renderUI({lapply(Sources_DCMS(),function(x) SourceURL(x,"DCMS"))})
-  #output$VisitSpendSources<-renderUI({list(lapply(Sources_ONS(),function(x) SourceURL(x,"ONS")),
-                                           #list(tags$p(tags$a(href = GBTShref(),GBTSText()))))})
+  
+  ##Update sources for overall panel
+  
+  GBTSDT<-eventReactive(input$Fetch,{reactive(Output_VisitSpend2(Clean_GBTSVisitSpend(),"Visits (millions)","Spend (£bn)"))},ignoreNULL=FALSE)
+  GBTS<-eventReactive(input$Fetch,{Clean_GBTSVisitSpend()},ignoreNULL = FALSE)
+  GBTSMaxYear<-reactive(colnames(GBTS())[length(GBTS())])
+  GBTSNote<-reactive(paste("2. GBTS figures are available up to ", paste(GBTSMaxYear(), "however spend data is not yet available")))
+  GBTShref<-reactive(paste("https://www.visitbritain.org/gb-tourism-survey-",paste(GBTSMaxYear(),"-overview",sep=""),sep=""))
+  GBTSText<-reactive(paste0("GBTS Travel Survey: ",GBTSMaxYear()))
+  
+  URLSources_DCMS<-eventReactive(input$Fetch,{read.csv("./User_Sources/DCMSDataSources.csv")},ignoreNULL=FALSE)
+  Sources_DCMS<-reactive(unique(as.vector(URLSources_DCMS()[,3])))
+  
+  URLSources_ONS<-eventReactive(input$Fetch,{read.csv("./User_Sources/ONSDataSources.csv")},ignoreNULL=FALSE)
+  Sources_ONS<-reactive(unique(as.vector(URLSources_ONS()[,3])))
+  
+  output$VisitSpendNotes<-renderUI({
+    if(length(GBTS()[which(is.na(GBTS()[,length(GBTS())])),length(GBTS())])>0){tags$p(GBTSNote())}
+    })
 
+  output$EconomicSources<-renderUI({list(lapply(Sources_DCMS(),function(x) SourceURL(x,"DCMS")),
+                                      SourceURL(URLSources_ONS()[which(URLSources_ONS()$Filename == "TSA"),3],"ONS"),
+                                      tags$p(tags$a(href = "https://www.ons.gov.uk/economy/grossvalueaddedgva/timeseries/abml/bb",
+                                                           URLSources_ONS()[which(URLSources_ONS()$Filename == "ABML"),3])))})
+  
+  output$VisitSpendSources<-renderUI({list(lapply(URLSources_ONS()[which(URLSources_ONS()$Filename %in% c("GMAA","GMAK")),2],function(x) SourceURL(x,"ONS")),
+                                           list(tags$p(tags$a(href = GBTShref(),GBTSText()))),
+                                           list(tags$p(tags$a(href = "https://www.visitbritain.org/great-britain-tourism-survey-latest-monthly-overnight-data","GBTS Latest Monthly Overnight Data"))))})
+
+  output$GBDVNote<-renderUI({if(input$VisitSpendDT == "Domestic day tourism (GB)"){
+                                tags$p(tags$b("Domestic day tourism (GB) page is under construction!"))}})
+  
+  output$RegionalSources<-renderUI(list(lapply(URLSources_ONS()[URLSources_ONS()$Filename %in% c("TourismRegionalEmployment","RegionalGVA"),1],function(x) tags$p(tags$a(href = x,URLSources_ONS()[which(URLSources_ONS()[,1]== x),3]))),
+                                        list(tags$p(tags$a(href = "https://www.ons.gov.uk/peoplepopulationandcommunity/leisureandtourism/datasets/regionalvalueoftourismestimatesfornuts1andnuts2areas","ONS Regional value of tourism"))),
+                                        list(tags$p(tags$a(href = "https://www.visitbritain.org/nation-region-county-data","VB Inbound nation, region & county data"))),
+                                        list(tags$p(tags$a(href = GBTShref(),GBTSText())))))
+  
   ##Download buttons
   
   output$downloadEconomicPlot<-downloadHandler(filename = function(){paste0(input$EconomicDT," Plot.png")},
@@ -79,26 +185,29 @@ shinyServer(function(input, output) {
   output$downloadVisitSpendTable<-downloadHandler(filename = function(){paste0(input$VisitSpendDT," Table.csv")},
                                                 content = function(file){write.csv(Rtable_VisitSpend()$x$data[,2:ncol(Rtable_VisitSpend()$x$data)],file = file)})
   
+  ##Update base data button
   
   observeEvent(input$Fetch,{withProgress(message = "Updating dashboard", value = 0,{d1<-Fetch_DCMSData()
-                                                                                    incProgress(1/6,detail = d1)
+                                                                                    incProgress(1/8,detail = d1)
                                                                                     d2<-Fetch_ONSData()
-                                                                                    incProgress(1/6,detail = d2)
+                                                                                    incProgress(1/8,detail = d2)
                                                                                     d3<-Fetch_VB_IPSData()
-                                                                                    incProgress(1/6,detail = d3)
+                                                                                    incProgress(1/8,detail = d3)
                                                                                     d4<-Fetch_VB_GBTSData()
-                                                                                    incProgress(1/6,detail = d4)
-                                                                                    d5<-Fetch_StatsWalesData()
-                                                                                    incProgress(1/6,detail = d5)
-                                                                                    incProgress(1/6,detail = "Download complete")})})  
+                                                                                    incProgress(1/8,detail = d4)
+                                                                                    d5<-Fetch_VB_PPTXData(url = "https://www.visitbritain.org/great-britain-tourism-survey-latest-monthly-overnight-data","GBTS")
+                                                                                    incProgress(1/8,detail = d5)
+                                                                                    d6<-Fetch_VB_PPTXData(url = "https://www.visitbritain.org/gb-day-visits-survey-latest-results","GBDV")
+                                                                                    incProgress(1/8,detail = d6)
+                                                                                    d7<-Fetch_StatsWalesData()
+                                                                                    incProgress(1/8,detail = d7)
+                                                                                    incProgress(1/8,detail = "Download complete")})})  
   
   ##Chloropleth Map Code
   
   ##Loads basemap
   
   RBaseMap<-reactive({BaseMap()})
-  
-
   
   ##Pulls in Ordinance Survey shapefile and spatial polygons dataframe  
   area2<-isolate({OSPolygons()})
@@ -202,6 +311,7 @@ shinyServer(function(input, output) {
   ##Release Calendar Code
   
   output$ReleaseCalendar<-DT::renderDataTable(Output_ReleaseCalendar())
+
   
   })
 

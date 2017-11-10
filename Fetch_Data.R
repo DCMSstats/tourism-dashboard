@@ -1,3 +1,5 @@
+library(lubridate)
+library(officer)
 library(tidyr)
 library(dplyr)
 library(RCurl)
@@ -198,6 +200,46 @@ Fetch_VB_GBTSData<-function(add_string = ""){
   return(print("VB GBTS data has been downloaded"))
 }
 
+Fetch_VB_PPTXData<-function(url,series){
+  
+  months<-c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
+  
+  url2<-getURL(url)
+  parsed<-htmlParse(url2)
+  links<-xpathSApply(parsed,path = "//a",xmlGetAttr,"href")
+  links<-unlist(links)
+  
+  ppt_files<-links[which((grepl("ppt",links) & grepl("summary",links)))]
+  
+  Year<-unique(as.numeric(unlist(strsplit(gsub("[^0-9]", "", ppt_files), ""))))
+  Year<-1000*Year[1]+100*Year[2]+10*Year[3]+Year[4]
+  
+  sys.year = as.numeric(format(Sys.Date(), "%Y"))
+  if(!(Year %in% seq(sys.year - 5, sys.year +5))){Year <- sys.year}
+  
+  MonthCheck<-t(sapply(months,function(x) grepl(x,sub("summary","",ppt_files))))
+  MonthCheck<-as.data.frame(apply(MonthCheck, 1, function(r) any(r == TRUE)))
+  MonthCheck<-rownames(MonthCheck)[which(MonthCheck==TRUE)]
+  
+  for(month in MonthCheck){
+    
+    Current_Month<-ppt_files[which(grepl(month,sub("summary","",ppt_files)))]
+    
+    month_int<-which(months == month)
+    
+    Date<-as.Date(paste0(Year,"-",month_int,"-",1))
+    
+    download.file(url = paste0("https://www.visitbritain.org",Current_Month),
+                  destfile = paste0("./Data/",Date," ",series,".pptx"),
+                  mode = "wb")
+    
+    
+  }
+  
+  print(paste0("VB latest ",series," data has been downloaded"))
+  
+}
+
 #Fetch Regional Data
 
 Fetch_VB_IPSData<-function(IPS_startyear=1999){
@@ -262,13 +304,19 @@ Fetch_StatsWalesData<-function(){
 
 #Function downloads all data sources 
 
-Fetch_Data<-function(SourceDCMS = "./User_Sources/DCMSDataSources.csv",SourceONS = "./User_Sources/ONSDataSources.csv",add_string="",IPS_startyear = 1999){
+Fetch_Data<-function(SourceDCMS = "./User_Sources/DCMSDataSources.csv",
+                     SourceONS = "./User_Sources/ONSDataSources.csv",
+                     add_string="",IPS_startyear = 1999,
+                     GBTSURL = "https://www.visitbritain.org/great-britain-tourism-survey-latest-monthly-overnight-data",
+                     GBDVURL = "https://www.visitbritain.org/gb-day-visits-survey-latest-results"){
   
   #Runs all 'Fetch' functions
   Fetch_DCMSData(Source = SourceDCMS)
   Fetch_ONSData(Source = SourceONS)
   Fetch_VB_GBTSData(add_string = add_string)
   Fetch_VB_IPSData(IPS_startyear = IPS_startyear)
+  Fetch_VB_PPTXData(url = GBTSURL,"GBTS")
+  Fetch_VB_PPTXData(url = GBDVURL,"GBDV")
   Fetch_StatsWalesData()
   
 }

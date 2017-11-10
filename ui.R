@@ -10,6 +10,9 @@ source("Fetch_Data.R")
 source("Clean_Data.R")
 source("Output_Data.R")
 library(shiny)
+library(DT)
+library(plotly)
+library(htmltools)
 
 # Define UI for application that draws a histogram
 shinyUI(
@@ -27,7 +30,7 @@ fluidPage(theme = "bootstrap.css",
             "#image img {max-width: 100%; width: auto; height: auto}"
           )),
           
-  titlePanel(windowTitle = "DCMS Tourism Dashboard",
+  titlePanel(windowTitle = "DCMS Tourism Dashboard (alpha v1.0)",
              title =
                div(
                  img(
@@ -36,7 +39,7 @@ fluidPage(theme = "bootstrap.css",
                    width = 150,
                    style = "margin:10px 10px"
                  ),
-       "DCMS Tourism Dashboard",
+       "DCMS Tourism Dashboard (alpha v1.0)",
                 class = 'title'
                )                  
          ),
@@ -46,7 +49,7 @@ fluidPage(theme = "bootstrap.css",
                   theme = shinythemes::shinytheme("spacelab"),
                   footer = helpText(
                     "Love the dashboard? Hate it? Got a suggestion to improve it? Found a bug? We'd love to hear from you",
-                    a(href="https://www.surveymonkey.co.uk/", target="_blank", "here")
+                    a(href="https://dcms.eu.qualtrics.com/jfe/form/SV_74i6qZ8q8XwTB0F", target="_blank", "here")
                   ),
                   tags$style(type="text/css", "body {padding-top: 0px;}"),
   
@@ -54,10 +57,14 @@ fluidPage(theme = "bootstrap.css",
   
     tabPanel("About",
              
-             fluidRow(column(3,div(tags$style(
-               type="text/css",
-               "#image img {max-width: auto; max-height: auto}"
-             ),div(img(src = "Sidepanel.png"), id = "image")),tags$br()),column(9,tags$p(class = "intro",
+             fluidRow(
+               
+               #column(3,div(tags$style(
+               #type="text/css",
+              # "#image img {max-width: auto; max-height: auto}"
+            # ),div(img(src = "Sidepanel.png"), id = "image")),tags$br()),
+             
+             column(12,tags$p(class = "intro",
                     "The DCMS Tourism Dashboard is a one-stop shop for all
                     information about tourism. It brings together a range of tourism 
                     datasets produced by DCMS, ONS, VisitBritain and VisitEngland into one easy-to-use tool. 
@@ -73,12 +80,14 @@ fluidPage(theme = "bootstrap.css",
                             Please be patient as the data updates as this will take a minute or so.")
                     ),
              fluidRow(column(1),column(12,
-               actionButton('Fetch', 'Check for new data')
+               actionButton('Fetch', 'Check for new data'),
+               tags$br(tags$p(" "))
              ))))),
     navbarMenu("Overall",
                tabPanel("Economic Contribution",
                         fluidRow(column(4,
                           div(class = "well",selectInput("EconomicDT","Choose a measure:",choices = c("GVA","Employment")),
+                          uiOutput("overall_rng"),
                           tags$p(tags$b("Click on the below buttons to download elements of this page:")),
                           fluidRow(column(12,downloadButton("downloadEconomicPlot","Download Plot "),
                                    downloadButton("downloadEconomicTable","Download Table"))
@@ -94,13 +103,23 @@ fluidPage(theme = "bootstrap.css",
                           ),
                           column(8,
                                  plotly::plotlyOutput("EconomicPlot",height = "auto"),
-                                 DT::dataTableOutput("EconomicTable")
+                                 DT::dataTableOutput("EconomicTable"),
+                                 tags$br(tags$p(paste0("Contains National Statistics data ","\u00A9"," Crown copyright and database right ",format(Sys.Date(), "%Y"))))
                           ) 
                         ), fluidRow(tags$br())),
   
-  tabPanel("Visits and Spend",
+  tabPanel("Visits and Spend",id = "VSTab",
            fluidRow(column(4,
                    div(class = "well",selectInput("VisitSpendDT","Choose tourism type:",choices = c("Inbound tourism (UK)","Domestic overnight tourism (GB)","Domestic day tourism (GB)")),
+                       selectInput("VisitSpendPeriod","Choose time period:",choices = c("Annual","Quarterly","Monthly")),
+                       
+                       ##This is style tag just to hide red shiny output errors
+                       
+                       tags$style(type="text/css",
+                                  ".shiny-output-error { visibility: hidden; }",
+                                  ".shiny-output-error:before { visibility: hidden; }"),uiOutput("visitspend_rng"),
+                       uiOutput("visitspend_tpq"),
+                       uiOutput("visitspend_tpm"),
                        tags$p(tags$b("Click on the below buttons to download elements of this page:")),
                    fluidRow(column(12,downloadButton("downloadVisitSpendPlot","Download Plot "),
                                    downloadButton("downloadVisitSpendTable","Download Table"))
@@ -115,8 +134,11 @@ fluidPage(theme = "bootstrap.css",
                         ))
                ),
              column(8,
+               htmlOutput("GBDVNote"),
                plotly::plotlyOutput("VisitSpendPlot"),
-               DT::dataTableOutput("VisitSpendTable")
+               tags$br(),
+               DT::dataTableOutput("VisitSpendTable"),
+               tags$br(tags$p(paste0("Contains National Statistics data ","\u00A9"," Crown copyright and database right ",format(Sys.Date(), "%Y"))))
              ) 
              ), fluidRow(tags$br()))
   ),
@@ -138,7 +160,10 @@ fluidPage(theme = "bootstrap.css",
                       
                       ),
                column(8,leafletOutput("RegionalGVAPlot"),
-                      DT::dataTableOutput("RegionalGVATable"),fluidRow(tags$br()))
+                      DT::dataTableOutput("RegionalGVATable"),fluidRow(tags$br()),
+               tags$div(paste0("Contains National Statistics data ","\u00A9"," Crown copyright and database right ",format(Sys.Date(), "%Y"))),
+               tags$div(paste0("Contains OS data ","\u00A9"," Crown copyright and database right ",format(Sys.Date(), "%Y")))),
+               tags$p(" ")
              ),
             tabPanel("More Information",column(4,div(class = "well",tags$h5(tags$b("Definitions")),
                                                                     tags$hr(style="border-color: red;border-top: 3px solid #F511BC;",
