@@ -34,7 +34,7 @@ fluidPage(theme = "bootstrap.css",
              title =
                div(
                  img(
-                   src = "DCMSlogo.png",
+                   src = "DCMSlogo.jpg",
                    height = 100,
                    width = 150,
                    style = "margin:10px 10px"

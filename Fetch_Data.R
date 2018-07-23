@@ -11,6 +11,7 @@ Fetch_DCMSData<-function(Source = "./User_Sources/DCMSDataSources.csv"){
   
   #reads in user inputted data sources and converts URLs to characters
   Source_df<-read.csv(Source)
+  #does [,1] mean the first column in the csv file?
   Source_df[,1]<-as.character(Source_df[,1])  
   
   #runs through all URLs and downloads corresponding xlsx file and saves it to the data folder
@@ -192,7 +193,6 @@ Fetch_VB_GBTSData<-function(add_string = ""){
     colnames(GBTS)[newcol]<-LatestDataYear
     
   }
-  
   write.csv(GBTS,file = "./Data/GBTS.csv")
   write.csv(DORV,file = "./Data/DORegionalVisits.csv")
   write.csv(DORS,file = "./Data/DORegionalSpend.csv")
@@ -307,8 +307,8 @@ Fetch_StatsWalesData<-function(){
 Fetch_Data<-function(SourceDCMS = "./User_Sources/DCMSDataSources.csv",
                      SourceONS = "./User_Sources/ONSDataSources.csv",
                      add_string="",IPS_startyear = 1999,
-                     GBTSURL = "https://www.visitbritain.org/great-britain-tourism-survey-latest-monthly-overnight-data",
-                     GBDVURL = "https://www.visitbritain.org/gb-day-visits-survey-latest-results"){
+                     GBTSURL = "https://www.visitbritain.org/great-britain-tourism-survey-latest-monthly-overnight-data"){
+                     #GBDVURL = "https://www.visitbritain.org/gb-day-visits-survey-latest-results")
   
   #Runs all 'Fetch' functions
   Fetch_DCMSData(Source = SourceDCMS)
@@ -316,7 +316,7 @@ Fetch_Data<-function(SourceDCMS = "./User_Sources/DCMSDataSources.csv",
   Fetch_VB_GBTSData(add_string = add_string)
   Fetch_VB_IPSData(IPS_startyear = IPS_startyear)
   Fetch_VB_PPTXData(url = GBTSURL,"GBTS")
-  Fetch_VB_PPTXData(url = GBDVURL,"GBDV")
+  #Fetch_VB_PPTXData(url = GBDVURL,"GBDV")
   Fetch_StatsWalesData()
   
 }

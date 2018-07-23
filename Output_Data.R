@@ -20,8 +20,8 @@ plot_Economic<-function(Data, sheetno = 2){
   TS_x<-as.numeric(t(data.frame(colnames(TS))))
   
   if(Data == "GVA")
-  {TS_y1<-t(TS[1,])[rng,]/1000
-  TS_y2<-t(TS[2,])[rng,]/1000
+  {TS_y1<-as.numeric(TS[1,rng])
+  TS_y2<-as.numeric(TS[2,rng])
   ytitle<-"GVA (\u00A3)"
   yrange<-c(0, round(max(TS_y1/10),0)*10+5)
   aytitle<-"GVA (\u00A3)"
@@ -344,7 +344,6 @@ Output_Economic<-function(Data_str,y1 = 2014,y2 = 2015){
       )
     )
   ))
-  DT<-DT/1000
   
   }else{
     sketch = htmltools::withTags(table(
@@ -364,7 +363,7 @@ Output_Economic<-function(Data_str,y1 = 2014,y2 = 2015){
   
   DT$Change<-round(100*((DT[,l2]/DT[,l1])-1),1)
   DT$Change[which(!is.na(DT$Change))]<-paste(DT$Change[which(!is.na(DT$Change))],"%",sep="")
-  DT[,1:(ncol(DT)-1)]<-round(DT[,1:(ncol(DT)-1)],1)
+  DT = DT %>% mutate_if(is.numeric, funs(round(., 1)))
   
   if(Data_str == "Employment"){DT<-rbind(DT[1,],rep("-",3),DT[2,])
   row.names(DT)[2]<-"Tourism industries"}
@@ -407,17 +406,7 @@ BaseMap<-function(){
   
   return(mymap)}
   
-OSPolygons<-function(){
-  
-  area2<-readOGR(dsn = "./Data", layer = "NUTS1b")
-  area2@proj4string<-CRS("+init=EPSG:7405")
-  area2<-spTransform(area2,CRS("+init=EPSG:4326"))
-  
-  return(area2)
-  
-}
 
-  
 Output_RegionalTable<-function(Region,Metric){
   
   RegionList<-Clean_RegionalTables()

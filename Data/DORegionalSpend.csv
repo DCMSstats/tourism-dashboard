@@ -1,13 +1,13 @@
-"","NUTS1.Regions","2010","2011","2012","2013","2014","2015"
-"1","West Midlands",NA,NA,NA,NA,NA,1454
-"2","East of England",NA,NA,NA,NA,NA,1630
-"3","East Midlands",NA,NA,NA,NA,NA,1146
-"4","London",NA,NA,NA,NA,NA,3080
-"5","North West",NA,NA,NA,NA,NA,2555
-"6","North East",NA,NA,NA,NA,NA,710
-"7","South East",NA,NA,NA,NA,NA,2572
-"8","South West",NA,NA,NA,NA,NA,4434
-"9","Yorkshire & the Humber",NA,NA,NA,NA,NA,1922
-"10","Scotland",NA,NA,NA,NA,NA,NA
-"11","Wales",NA,NA,NA,NA,NA,NA
-"12","Northern Ireland",NA,NA,NA,NA,NA,NA
+"","NUTS1.Regions","2010","2011","2012","2013","2014","2015","2016","2017"
+"1","West Midlands","1.1",1.1,1.2,1.3,1.2,1.5,1.3,"1.2"
+"2","East of England","1.3",1.5,1.7,1.4,1.6,1.6,1.5,"1.7"
+"3","East Midlands","1.0",1.3,1.3,1.1,1.1,1.1,1.1,"1.0"
+"4","London","2.4",2.4,2.8,2.8,2.9,2.9,2.8,"2.7"
+"5","North West","2.2",2.5,2.7,2.4,2.5,2.5,2.4,"2.7"
+"6","North East","0.6",0.7,0.8,0.7,0.6,0.7,0.6,"0.7"
+"7","South East","2.2",2.6,2.9,2.7,2.4,2.5,2.8,"2.7"
+"8","South West","3.6",4,4.2,4.3,3.9,4.3,4.3,"4.5"
+"9","Yorkshire & the Humber","1.4",1.7,1.8,1.8,1.7,1.8,1.6,"1.7"
+"10","Scotland","2.5",3,2.9,2.9,2.9,3.3,2.9,"N/A"
+"11","Wales","1.4",1.7,1.6,1.7,1.7,2,1.7,"1.6"
+"12","Northern Ireland","N/A",0.6,0.7,0.7,0.7,0.8,0.9," 0.9 "

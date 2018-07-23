@@ -140,7 +140,7 @@ shinyServer(function(input, output, session) {
   GBTSDT<-eventReactive(input$Fetch,{reactive(Output_VisitSpend2(Clean_GBTSVisitSpend(),"Visits (millions)","Spend (£bn)"))},ignoreNULL=FALSE)
   GBTS<-eventReactive(input$Fetch,{Clean_GBTSVisitSpend()},ignoreNULL = FALSE)
   GBTSMaxYear<-reactive(colnames(GBTS())[length(GBTS())])
-  GBTSNote<-reactive(paste("2. GBTS figures are available up to ", paste(GBTSMaxYear(), "however spend data is not yet available")))
+  #GBTSNote<-reactive(paste("2. GBTS figures are available up to ", paste(GBTSMaxYear(), "however spend data is not yet available")))
   GBTShref<-reactive(paste("https://www.visitbritain.org/gb-tourism-survey-",paste(GBTSMaxYear(),"-overview",sep=""),sep=""))
   GBTSText<-reactive(paste0("GBTS Travel Survey: ",GBTSMaxYear()))
   
@@ -197,8 +197,8 @@ shinyServer(function(input, output, session) {
                                                                                     incProgress(1/8,detail = d4)
                                                                                     d5<-Fetch_VB_PPTXData(url = "https://www.visitbritain.org/great-britain-tourism-survey-latest-monthly-overnight-data","GBTS")
                                                                                     incProgress(1/8,detail = d5)
-                                                                                    d6<-Fetch_VB_PPTXData(url = "https://www.visitbritain.org/gb-day-visits-survey-latest-results","GBDV")
-                                                                                    incProgress(1/8,detail = d6)
+                                                                                    #d6<-Fetch_VB_PPTXData(url = "https://www.visitbritain.org/gb-day-visits-survey-latest-results","GBDV")
+                                                                                    #incProgress(1/8,detail = d6)
                                                                                     d7<-Fetch_StatsWalesData()
                                                                                     incProgress(1/8,detail = d7)
                                                                                     incProgress(1/8,detail = "Download complete")})})  
@@ -209,9 +209,9 @@ shinyServer(function(input, output, session) {
   
   RBaseMap<-reactive({BaseMap()})
   
-  ##Pulls in Ordinance Survey shapefile and spatial polygons dataframe  
-  area2<-isolate({OSPolygons()})
-  area2data<-area2@data
+  # ##Pulls in Ordinance Survey shapefile and spatial polygons dataframe  
+  # area2<-isolate({OSPolygons()})
+  # area2data<-area2@data
   
   ##Get regional value dataset and append to the NUTS1 
   Data <- reactive({Clean_RegionalValue(input$MapInputData)})

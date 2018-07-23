@@ -49,16 +49,16 @@ Clean_DCMSEconomic<-function(Data,sheetno = 2){
   UK_row<-max(UK_rng[which(UK_rng>sector_row & UK_rng<notes_row)])
   tourism_row<-min(tourism_rng[which(tourism_rng>sector_row & tourism_rng<notes_row)])
   
-  Min_column<-which(Data.tibble[sector_row,]==Year_min)
-  Max_column<-which(Data.tibble[sector_row,]==Year_max)
+  Min_column<-min(which(grepl(Year_min,Data.tibble[sector_row,])))
+  Max_column<-min(which(grepl(Year_max,Data.tibble[sector_row,])))
   Year_rng<-seq(Min_column,Max_column,1)
   
   Tourism_Data<-as.data.frame(Data.tibble[tourism_row,Year_rng])
   UK_Data<-as.data.frame(Data.tibble[UK_row,Year_rng])
-  Other_Data<-UK_Data-Tourism_Data
+  Other_Data<-as.numeric(UK_Data)-as.numeric(Tourism_Data)
   
   Data.table<-rbind(Tourism_Data,Other_Data)
-  colnames(Data.table)<-as.data.frame(Data.tibble[sector_row,Year_rng])
+  colnames(Data.table)<-Year_min:Year_max
   rownames(Data.table)<-c("Tourism","Other Industries")
   
   return(Data.table)
